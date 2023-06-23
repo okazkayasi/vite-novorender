@@ -67,4 +67,5 @@ export async function novo(api: API, canvas: HTMLCanvasElement, sceneID: string)
 
   startResizeObserver(view, canvas)
   run(view, canvas)
+  return view
 }
