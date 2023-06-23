@@ -12,5 +12,5 @@ export const useRunOnMount = (effect: () => void, cleanup?: () => void) => {
         cleanup()
       }
     }
-  }, [])
+  }, [effect, cleanup])
 }
