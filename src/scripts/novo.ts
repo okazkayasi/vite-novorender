@@ -1,43 +1,70 @@
-import { API } from '@novorender/webgl-api'
+import { API, RenderOutput, View } from '@novorender/webgl-api'
+import { createAPI } from '@novorender/data-js-api'
 
-export async function novo(api: API, canvas: HTMLCanvasElement) {
-  // create a view
-  const view = await api.createView(
-    { background: { color: [0, 0, 0, 0] } }, // transparent
-    canvas,
-  )
+interface RenderOutputWithDispose extends RenderOutput {
+  dispose: () => void
+}
+function startResizeObserver(view: View, canvas: HTMLCanvasElement) {
+  // Handle canvas resizes
+  new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      canvas.width = entry.contentRect.width
+      canvas.height = entry.contentRect.height
+      view.applySettings({
+        display: { width: canvas.width, height: canvas.height },
+      })
+    }
+  }).observe(canvas)
+}
 
-  // provide a camera controller
-  view.camera.controller = api.createCameraController({ kind: 'turntable' })
-
-  // load the Condos demo scene
-  //   WellKnownSceneUrls.condos
-  view.scene = await api.loadScene(
-    'https://api.novorender.com/assets/scenes/18f56c98c1e748feb8369a6d32fde9ef/',
-  )
-
-  // create a bitmap context to display render output
+async function run(view: View, canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('bitmaprenderer')
 
-  // main render loop
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    // handle canvas resizes
-    const { clientWidth, clientHeight } = canvas
-    view.applySettings({
-      display: { width: clientWidth, height: clientHeight },
+    // Render frame
+    const output = (await view.render()) as RenderOutputWithDispose
+
+    // Finalize output image
+    const image = await output.getImage()
+    if (image) {
+      // Display the given ImageBitmap in the canvas associated with this rendering context.
+      ctx?.transferFromImageBitmap(image)
+      // release bitmap data
+      image.close()
+    }
+
+    output.dispose()
+  }
+}
+
+export async function novo(api: API, canvas: HTMLCanvasElement, sceneID: string) {
+  const dataApi = createAPI({
+    serviceUrl: 'https://data.novorender.com/api',
+  })
+
+  const sceneData = await dataApi
+    // Condos scene ID, but can be changed to any public scene ID
+    .loadScene(sceneID)
+    .then((res) => {
+      if ('error' in res) {
+        throw res
+      } else {
+        return res
+      }
     })
 
-    // render frame
-    const output = await view.render()
-    {
-      // finalize output image
-      const image = await output.getImage()
-      if (image) {
-        // display in canvas
-        ctx?.transferFromImageBitmap(image)
-        image.close()
-      }
-    }
-  }
+  const { url, db, settings, camera: cameraParams } = sceneData
+
+  const scene = await api.loadScene(url, db)
+
+  const view = await api.createView(settings, canvas)
+
+  const flightControllerParams = { kind: 'flight' } as any
+  const camera = cameraParams ?? flightControllerParams
+  view.camera.controller = api.createCameraController(camera, canvas)
+  view.scene = scene
+
+  startResizeObserver(view, canvas)
+  run(view, canvas)
 }
