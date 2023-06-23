@@ -22,7 +22,6 @@ export const Buttons = (props: IButtonsComponent) => {
   const moveCamera = (i: 0 | 1 | 2) => {
     console.log('move camera to ', i + 1)
     const currentButtonData = buttonData[i]
-    console.log(currentButtonData)
     if (!currentButtonData.initialized) return
     view.camera.controller.moveTo(currentButtonData.position, currentButtonData.rotation)
   }
@@ -37,7 +36,7 @@ export const Buttons = (props: IButtonsComponent) => {
 
   const buttonIndices = [0, 1, 2] as const
   return (
-    <div className="fixed top-10 left-10 z-10 flex gap-4">
+    <div className="flex gap-4">
       {buttonIndices.map((i) => (
         <button onClick={handleClick(i)} key={i}>
           Button {i + 1}

@@ -6,6 +6,7 @@ import { createAPI, View } from '@novorender/webgl-api'
 import { novo } from './scripts/novo.ts'
 import { quat, vec3 } from 'gl-matrix'
 import { Buttons } from './components/Buttons.tsx'
+import { Search } from './components/Search.tsx'
 
 const SCENE_ID = '3b5e65560dc4422da5c7c3f827b6a77c'
 
@@ -49,7 +50,10 @@ function App() {
   return (
     <div className="relative">
       <canvas ref={canvasRef} width={width} height={height} className="relative" />
-      <Buttons view={view} buttonData={buttonData} setButtonData={setButtonData} />
+      <div className="fixed top-10 left-10 z-10 flex flex-col gap-4 items-start">
+        <Buttons view={view} buttonData={buttonData} setButtonData={setButtonData} />
+        <Search view={view} />
+      </div>
     </div>
   )
 }
